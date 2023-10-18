@@ -30,7 +30,19 @@ def start(message):
         itembtn3 = telebot.types.KeyboardButton('Bangla')
         markup.add(itembtn1, itembtn2, itembtn3)
         bot.send_message(message.chat.id, language_message, reply_markup=markup)
+        
+        # tell bot to report back the language selected
+        # Provide a translated confirmation message based on the selected language
+        confirmation_messages = {
+            "English": "You've selected English. What questions would you like to ask in this language?",
+            "Chinese": "你选择了中文。您想用这种语言问什么问题？",
+            "Bengali": "আপনি বেঙ্গালি ভাষা নির্বাচন করেছেন। আপনি কি এই ভাষায় কোন প্রশ্ন করতে চান?"
+        }
 
+        confirm_message = confirmation_messages.get(selected_language, "You've selected a language. What questions would you like to ask in this language?")
+        bot.send_message(message.chat.id, confirm_message)
+
+        
         # Store language choice in a global variable that the model can access
         global selected_language
         selected_language = message.text
@@ -51,8 +63,7 @@ def send_text(message):
 
 def main():
     """Runs the Telegram Bot"""
-    # Start bot
-
+    print("Starting Telegram Bot...")
     bot.infinity_polling()
 
 
