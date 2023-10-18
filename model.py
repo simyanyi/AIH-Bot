@@ -11,6 +11,8 @@ from langchain.vectorstores import Chroma
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import ConversationalRetrievalChain
+from bot import selected_language
+
 
 def getResponse(question: str) -> str:
 
@@ -64,15 +66,34 @@ def getResponse(question: str) -> str:
 
     # Define llm model
 
+    # use user input to determine language
+    language = selected_language
+    
     llm_name = "gpt-3.5-turbo-16k"
     llm = ChatOpenAI(model_name=llm_name, temperature=0)
+    
     # Define template prompt
-    template = """You are a friendly chatbot helping a migrant worker settle down in Singapore. Use the following pieces of context to answer the question at the end.
-    {context}
-    Question: {question}
-    Helpful Answer in English Language: """
+    if language == "English":
+        template = """You are a friendly chatbot helping to answer questions by employees at HealthServe regarding Singapore's migrant workers' healthcare. Use the following pieces of context to answer the question at the end.
+        {context}
+        Question: {question}
+        Helpful Answer in English Language: """
+        context = "You are a cheerful bot who is nice and friendly, and aims to help answer questions from HealthServe employees"
+    
+    elif language == "Chinese":
+        template = """您是一个友好的聊天机器人，帮助回答 HealthServe 员工有关新加坡移民工人医疗保健的问题。使用以下上下文来回答最后的问题。
+        {context}
+        Question: {question}
+        Helpful Answer in Chinese Language: """
+        context = "您是一个开朗的机器人，友善且友善，旨在帮助回答 HealthServe 员工的问题"
+    
+    else:
+        template = """আপনি একজন বন্ধুত্বপূর্ণ চ্যাটবট যিনি সিঙ্গাপুরের অভিবাসী কর্মীদের স্বাস্থ্যসেবা সংক্রান্ত HealthServe-এর কর্মীদের প্রশ্নের উত্তর দিতে সাহায্য করেন। শেষে প্রশ্নের উত্তর দিতে নিচের প্রসঙ্গগুলো ব্যবহার করুন।
+        {context}
+        Question: {question}
+        Helpful Answer in Bangla Language: """
+        context = "আপনি একজন প্রফুল্ল বট যিনি সুন্দর এবং বন্ধুত্বপূর্ণ, এবং হেলথসার্ভের কর্মীদের প্রশ্নের উত্তর দিতে সাহায্য করার লক্ষ্য রাখেন"
 
-    context = "You are a cheerful bot who is nice and friendly, and aims to help answer questions from HealthServe employees"
 
     your_prompt = PromptTemplate.from_template(template, context=context)
 
