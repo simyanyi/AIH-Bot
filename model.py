@@ -40,7 +40,7 @@ def getResponse(question: str) -> str:
     vectordb = Chroma.from_documents(
         documents=splits,
         embedding=embedding,
-        persist_directory=persist_directory # Writes to local directory in G Drive
+        persist_directory=persist_directory # Writes to local directory
     )
 
     memory = ConversationBufferMemory(
@@ -55,21 +55,26 @@ def getResponse(question: str) -> str:
     os.environ["LANGCHAIN_ENDPOINT"] = "https://api.langchain.plus"
     os.environ["LANGCHAIN_PROJECT"] = "Chatbot"
 
-    # Define parameters for retrival
-    retriever=vectordb.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": .5, "k": 5})
+    # Define parameters for retrival via similarity score threshold (change k, score_threshold as needed)
+    retriever = vectordb.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": .8, "k": 10})
+
+    # Define parameters for retrival via mmr
+    # retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 10})
+
 
     # Define llm model
 
     llm_name = "gpt-3.5-turbo-16k"
     llm = ChatOpenAI(model_name=llm_name, temperature=0)
     # Define template prompt
-    template = """You are a friendly chatbot that helps sad university students cope with their immense stress. 
-    Use the following pieces of context to answer the question at the end.
+    template = """You are a friendly chatbot helping a migrant worker settle down in Singapore. Use the following pieces of context to answer the question at the end.
     {context}
     Question: {question}
-    Helpful Answer:"""
+    Helpful Answer in English Language: """
 
-    your_prompt = PromptTemplate.from_template(template)
+    context = "You are a cheerful bot who is nice and friendly, and aims to help answer questions from HealthServe employees"
+
+    your_prompt = PromptTemplate.from_template(template, context=context)
 
     # Execute chain
     qa = ConversationalRetrievalChain.from_llm(
@@ -84,5 +89,5 @@ def getResponse(question: str) -> str:
     # Evaluate your chatbot with questions
     result = qa({"question": question})
 
-    print(result)
+    print("Response: \n",result["answer"])
     return result['answer']
