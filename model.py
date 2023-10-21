@@ -15,6 +15,7 @@ from bot import selected_language
 
 
 def getResponse(question: str) -> str:
+    global selected_language
 
     load_dotenv('./.env')
 
@@ -73,14 +74,14 @@ def getResponse(question: str) -> str:
     llm = ChatOpenAI(model_name=llm_name, temperature=0)
     
     # Define template prompt
-    if language == "English":
+    if question == "English":
         template = """You are a friendly chatbot helping to answer questions by employees at HealthServe regarding Singapore's migrant workers' healthcare. Use the following pieces of context to answer the question at the end.
         {context}
         Question: {question}
         Helpful Answer in English Language: """
         context = "You are a cheerful bot who is nice and friendly, and aims to help answer questions from HealthServe employees"
     
-    elif language == "Chinese":
+    elif question == "Chinese":
         template = """您是一个友好的聊天机器人，帮助回答 HealthServe 员工有关新加坡移民工人医疗保健的问题。使用以下上下文来回答最后的问题。
         {context}
         Question: {question}
@@ -109,6 +110,11 @@ def getResponse(question: str) -> str:
 
     # Evaluate your chatbot with questions
     result = qa({"question": question})
+
+    # if clear memory button is pressed, clear memory
+    if question == "Clear Memory":
+        memory.clear()
+        return "Memory cleared!"
 
     print("Response: \n",result["answer"])
     return result['answer']
