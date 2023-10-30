@@ -11,19 +11,25 @@ from langchain.vectorstores import Chroma
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import ConversationalRetrievalChain
-from bot import selected_language
+from tabulate import tabulate
+
+load_dotenv('./.env')
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+LANGCHAIN_API_KEY = os.getenv('LANGCHAIN_API_KEY')
 
 
-def getResponse(question: str) -> str:
-    global selected_language
+def getResponse(question: str) -> str:  
 
-    load_dotenv('./.env')
-
-    OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-    LANGCHAIN_API_KEY = os.getenv('LANGCHAIN_API_KEY')
+    print("Question: ", question)
 
     loader = PyPDFDirectoryLoader("./research/")
     pages = loader.load()
+    
+    for i in range(len(pages)):
+        sentence = pages[i].page_content
+        sentence = sentence.replace('\n', ' ')
+        sentence = sentence.replace('\t', ' ')
+        pages[i].page_content = sentence
 
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=1000,
@@ -33,7 +39,6 @@ def getResponse(question: str) -> str:
 
     splits = text_splitter.split_documents(pages)
 
-    # Your experiment can start from this code block which loads the vector store into variable vectordb
     embedding = OpenAIEmbeddings()
 
     # Reference https://github.com/hwchase17/chroma-langchain/blob/master/persistent-qa.ipynb
@@ -43,8 +48,9 @@ def getResponse(question: str) -> str:
     vectordb = Chroma.from_documents(
         documents=splits,
         embedding=embedding,
-        persist_directory=persist_directory # Writes to local directory
+        persist_directory=persist_directory # Writes to local directory in G Drive
     )
+    # print(vectordb._collection.count())
 
     memory = ConversationBufferMemory(
         memory_key="chat_history",
@@ -52,50 +58,27 @@ def getResponse(question: str) -> str:
         input_key='question',
         output_key='answer'
     )
-
     # Code below will enable tracing so we can take a deeper look into the chain
     os.environ["LANGCHAIN_TRACING_V2"] = "true"
     os.environ["LANGCHAIN_ENDPOINT"] = "https://api.langchain.plus"
     os.environ["LANGCHAIN_PROJECT"] = "Chatbot"
-
-    # Define parameters for retrival via similarity score threshold (change k, score_threshold as needed)
-    retriever = vectordb.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": .8, "k": 10})
-
-    # Define parameters for retrival via mmr
-    # retriever = vectordb.as_retriever(search_type="mmr", search_kwargs={"k": 10})
-
-
-    # Define llm model
-
-    # use user input to determine language
-    language = selected_language
     
+    k=5
+    # Define parameters for retrival
+    retriever=vectordb.as_retriever(search_type="mmr", search_kwargs={"k": k})
+    # retriever=vectordb.as_retriever(search_type="similarity_score_threshold", search_kwargs={"score_threshold": .8, "k": k})    
+    
+    # Define llm model
     llm_name = "gpt-3.5-turbo-16k"
     llm = ChatOpenAI(model_name=llm_name, temperature=0)
-    
+
     # Define template prompt
-    if question == "English":
-        template = """You are a friendly chatbot helping to answer questions by employees at HealthServe regarding Singapore's migrant workers' healthcare. Use the following pieces of context to answer the question at the end.
+    template = """You are a friendly chatbot helping to answer questions by employees at HealthServe regarding Singapore's migrant workers' healthcare. Use the following pieces of context to answer the question at the end.
         {context}
         Question: {question}
         Helpful Answer in English Language: """
-        context = "You are a cheerful bot who is nice and friendly, and aims to help answer questions from HealthServe employees"
+    context = "You are a cheerful bot who is nice and friendly, and aims to help answer questions from HealthServe employees"
     
-    elif question == "Chinese":
-        template = """您是一个友好的聊天机器人，帮助回答 HealthServe 员工有关新加坡移民工人医疗保健的问题。使用以下上下文来回答最后的问题。
-        {context}
-        Question: {question}
-        Helpful Answer in Chinese Language: """
-        context = "您是一个开朗的机器人，友善且友善，旨在帮助回答 HealthServe 员工的问题"
-    
-    else:
-        template = """আপনি একজন বন্ধুত্বপূর্ণ চ্যাটবট যিনি সিঙ্গাপুরের অভিবাসী কর্মীদের স্বাস্থ্যসেবা সংক্রান্ত HealthServe-এর কর্মীদের প্রশ্নের উত্তর দিতে সাহায্য করেন। শেষে প্রশ্নের উত্তর দিতে নিচের প্রসঙ্গগুলো ব্যবহার করুন।
-        {context}
-        Question: {question}
-        Helpful Answer in Bangla Language: """
-        context = "আপনি একজন প্রফুল্ল বট যিনি সুন্দর এবং বন্ধুত্বপূর্ণ, এবং হেলথসার্ভের কর্মীদের প্রশ্নের উত্তর দিতে সাহায্য করার লক্ষ্য রাখেন"
-
-
     your_prompt = PromptTemplate.from_template(template, context=context)
 
     # Execute chain
@@ -105,16 +88,39 @@ def getResponse(question: str) -> str:
         retriever=retriever,
         return_source_documents=True,
         return_generated_question=True,
-        memory=memory
+        memory=memory,
+
     )
 
     # Evaluate your chatbot with questions
     result = qa({"question": question})
 
-    # if clear memory button is pressed, clear memory
-    if question == "Clear Memory":
-        memory.clear()
-        return "Memory cleared!"
+    # getting source documents
+    table_data = []
 
-    print("Response: \n",result["answer"])
+    docs = vectordb.similarity_search(question, k)
+    for i in range(k):
+        metadata = docs[i].metadata
+        page_content = docs[i].page_content
+        source = metadata['source']
+        page = metadata['page']
+        chunk_data = [i, source, page, page_content]
+        table_data.append(chunk_data)
+        
+    table_headers = ["Chunk", "Source", "Page", "Content"]
+    table_str = tabulate(table_data, headers=table_headers, tablefmt="grid")
+
+    print(table_str)
+
     return result['answer']
+
+# model memory clear
+def clear():
+    memory = ConversationBufferMemory(
+        memory_key="chat_history",
+        return_messages=True,
+        input_key='question',
+        output_key='answer'
+    )
+    memory.clear()
+    return "Memory cleared!"
