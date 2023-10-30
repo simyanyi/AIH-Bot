@@ -76,7 +76,7 @@ def getResponse(question: str) -> str:
     template = """You are a friendly chatbot helping to answer questions by employees at HealthServe regarding Singapore's migrant workers' healthcare. Use the following pieces of context to answer the question at the end.
         {context}
         Question: {question}
-        Helpful Answer in English Language: """
+        Helpful Answer in the question's language: """
     context = "You are a cheerful bot who is nice and friendly, and aims to help answer questions from HealthServe employees"
     
     your_prompt = PromptTemplate.from_template(template, context=context)
@@ -111,6 +111,9 @@ def getResponse(question: str) -> str:
     table_str = tabulate(table_data, headers=table_headers, tablefmt="grid")
 
     print(table_str)
+
+    if table_data == []:
+        return "Sorry, I don't understand your question. Please try again or refer to MOM's website for more information."
 
     return result['answer']
 
