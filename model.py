@@ -111,6 +111,7 @@ def getResponse(question: str) -> str:
     table_str = tabulate(table_data, headers=table_headers, tablefmt="grid")
 
     print(table_str)
+    print("Response: ", result['answer'])
 
     if table_data == []:
         return "Sorry, I don't understand your question. Please try again or refer to MOM's website for more information."
