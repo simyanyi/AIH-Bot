@@ -73,7 +73,7 @@ def getResponse(question: str) -> str:
     llm = ChatOpenAI(model_name=llm_name, temperature=0)
 
     # Define template prompt
-    template = """You are a friendly chatbot helping to answer questions by employees at HealthServe regarding Singapore's migrant workers' healthcare. Use the following pieces of context to answer the question at the end.
+    template = """You are a friendly chatbot, named James, helping to answer questions by employees at HealthServe regarding Singapore's migrant workers' healthcare. Use the following pieces of context to answer the question at the end.
         {context}
         Question: {question}
         Helpful Answer in the question's language: """
