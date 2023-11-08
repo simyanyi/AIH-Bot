@@ -54,15 +54,18 @@ Mac: Run the following on your terminal (zsh)
 pip3 install -r requirements.txt
 ```
 
-### 5. How to run our code
+### 5. Add source documents
+Create a research folder under `AIH-Bot` directory and drag the downloaded source documents into the folder.
+
+### 6. How to run our code
 
 There are two Python files that will be running the show, `bot.py` and `model.py`.
 
 - `bot.py` will assist in receiving and sending out responses. 
 
-- `model.py` currently consists of only one function, `getResponses(question)`. It takes in the user's input and should return the message that we would like to return to the user. 
+- `model.py` currently consists of only 2 functions. `getResponses(question)` which takes in the user's input and should return the message that we would like to return to the user. `clear()` helps clear conversational memory.
 
-## 6. Test the bot
+## 7. Test the bot
 
 Time for you to try our bot out!
 
